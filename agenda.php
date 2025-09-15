@@ -31,13 +31,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         if ($_POST['action'] === 'save') {
             $evento_id = $_POST['id'] ?? null;
             $asignado_a = ($user_rol == 'admin' && !empty($_POST['usuario_id'])) ? $_POST['usuario_id'] : $user_id;
+            
+            $cliente_id = null;
+            $titulo = $_POST['titulo'];
+
+            // Si se proporciona un nombre de referencia, es una visita sin cliente registrado.
+            if (!empty($_POST['nombre_referencia'])) {
+                $cliente_id = null;
+                $titulo = $_POST['nombre_referencia'] . " - " . $titulo;
+            } else if (!empty($_POST['cliente_id'])) {
+                // Si no, se usa el cliente seleccionado (si lo hay).
+                $cliente_id = $_POST['cliente_id'];
+            }
+
             if ($evento_id) {
                 $stmt = $pdo->prepare("UPDATE agenda SET usuario_id=?, cliente_id=?, titulo=?, descripcion=?, fecha_hora_inicio=?, tipo=? WHERE id=?");
-                $stmt->execute([$asignado_a, $_POST['cliente_id'], $_POST['titulo'], $_POST['descripcion'], $_POST['fecha_hora_inicio'], $_POST['tipo'], $evento_id]);
+                $stmt->execute([$asignado_a, $cliente_id, $titulo, $_POST['descripcion'], $_POST['fecha_hora_inicio'], $_POST['tipo'], $evento_id]);
                 $_SESSION['success_message'] = "Visita actualizada.";
             } else {
                 $stmt = $pdo->prepare("INSERT INTO agenda (usuario_id, cliente_id, titulo, descripcion, fecha_hora_inicio, tipo) VALUES (?, ?, ?, ?, ?, ?)");
-                $stmt->execute([$asignado_a, $_POST['cliente_id'], $_POST['titulo'], $_POST['descripcion'], $_POST['fecha_hora_inicio'], $_POST['tipo']]);
+                $stmt->execute([$asignado_a, $cliente_id, $titulo, $_POST['descripcion'], $_POST['fecha_hora_inicio'], $_POST['tipo']]);
                 $_SESSION['success_message'] = "Visita agendada.";
             }
         } elseif ($_POST['action'] === 'delete') {

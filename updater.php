@@ -34,13 +34,13 @@ if ($action === 'run_update') {
         </div>
     </div>
     <?php
-    require_once 'includes/footer.php';
     
     function log_message($message, $type = 'info') {
-        echo '<div class="log-entry log-' . $type . '"><pre>[' . date('Y-m-d H:i:s') . '] ' . htmlspecialchars($message) . '</pre></div>';
+        $escaped_html = json_encode('<div class="log-entry log-' . $type . '"><pre>[' . date('Y-m-d H:i:s') . '] ' . htmlspecialchars($message) . '</pre></div>');
+        echo '<script>\n            var logBox = document.getElementById("update-log");\n            if (logBox) {\n                logBox.innerHTML += ' . $escaped_html . ';\n                logBox.scrollTop = logBox.scrollHeight;\n            }\n        </script>';
         ob_flush();
         flush();
-        usleep(100000); // Pequeña pausa para que el navegador renderice
+        usleep(100000);
     }
 
     function show_final_button() {
@@ -244,6 +244,7 @@ if ($action === 'run_update') {
         show_final_button();
     }
 
+    require_once 'includes/footer.php';
     exit;
 }
 
