@@ -70,12 +70,29 @@ if ($action === 'run_update') {
     }
 
     try {
-        // 2. Descargar actualización
+        // 2. Descargar actualización con cURL
         log_message("Descargando paquete desde $url...");
         $update_zip_path = $temp_dir . '/update.zip';
         if (!is_dir($temp_dir)) mkdir($temp_dir, 0755, true);
-        $zip_content = @file_get_contents($url);
-        if ($zip_content === false) throw new Exception("No se pudo descargar el archivo de actualización.");
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 60); // Timeout más largo para descargas
+        curl_setopt($ch, CURLOPT_USERAGENT, 'Cerco App Updater');
+        
+        // Para problemas de SSL en entornos locales como XAMPP
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+
+        $zip_content = curl_exec($ch);
+        $curl_error = curl_error($ch);
+        curl_close($ch);
+
+        if ($zip_content === false) {
+            throw new Exception("No se pudo descargar el archivo de actualización. Detalle: " . htmlspecialchars($curl_error));
+        }
+        
         file_put_contents($update_zip_path, $zip_content);
         log_message("Paquete descargado.", "success");
 
@@ -116,17 +133,36 @@ if ($action === 'run_update') {
 
         // 6. Instalar archivos
         log_message("Instalando nuevos archivos...");
-        $update_files_dir = $temp_dir . '/cerco'; // Asumiendo que el zip contiene una carpeta 'cerco'
-        if (!is_dir($update_files_dir)) $update_files_dir = $temp_dir; // Fallback si no hay carpeta 'cerco'
+
+        // --- Lógica mejorada para encontrar el directorio correcto ---
+        $scan = glob($temp_dir . '/*');
+        $update_files_dir = $temp_dir; // Por defecto, es el directorio temporal
+
+        // Filtra el update.zip para no considerarlo como directorio de actualizacion
+        $scan = array_filter($scan, function($file) {
+            return basename($file) != 'update.zip';
+        });
+
+        if (count($scan) === 1 && is_dir(reset($scan))) {
+            // Si solo hay un directorio dentro, ese es nuestro directorio de origen
+            $update_files_dir = reset($scan);
+            log_message("Directorio de actualización encontrado: " . basename($update_files_dir));
+        } else {
+            log_message("Los archivos de actualización están en la raíz del zip.");
+        }
+
+        $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($update_files_dir, RecursiveDirectoryIterator::SKIP_DOTS), RecursiveIteratorIterator::SELF_FIRST);
         
-        $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($update_files_dir, RecursiveDirectoryIterator::SKIP_DOTS));
         foreach ($iterator as $file) {
-            $source = $file->getRealPath();
             $destination = __DIR__ . '/' . $iterator->getSubPathName();
-            if (is_dir($source)) {
-                if (!is_dir($destination)) mkdir($destination, 0755, true);
+            if ($file->isDir()) {
+                if (!is_dir($destination)) {
+                    mkdir($destination, 0755, true);
+                }
             } else {
-                copy($source, $destination);
+                if (!copy($file, $destination)) {
+                     log_message("ADVERTENCIA: No se pudo copiar el archivo: " . $file->getRealPath(), "error");
+                }
             }
         }
         log_message("Nuevos archivos instalados.", "success");
