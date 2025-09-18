@@ -1,4 +1,12 @@
-<?php $is_edit_mode = ($action == 'edit'); ?>
+<?php 
+$is_edit_mode = ($action == 'edit'); 
+// Inyectar configuraciones de PHP a JavaScript
+$iva_porcentaje_php = $app_settings['iva_porcentaje'] ?? 19;
+?>
+<script>
+    const IVA_PORCENTAJE = <?= json_encode($iva_porcentaje_php); ?>;
+</script>
+
 <div class="page-header slide-in-up">
     <div class="d-flex justify-content-between align-items-center">
         <div>
@@ -104,7 +112,7 @@
                     </div>
                     <div class="form-check form-switch">
                         <input class="form-check-input" type="checkbox" id="activar_iva" name="activar_iva" value="1" <?= ($cotizacion_edit['con_iva'] ?? 0) ? 'checked' : '' ?>>
-                        <label class="form-check-label" for="activar_iva">Activar IVA (19%)</label>
+                        <label class="form-check-label" for="activar_iva">Activar IVA (<?= htmlspecialchars($iva_porcentaje_php ?? 19) ?>%)</label>
                     </div>
                     <div class="form-check form-switch mb-3">
                         <input class="form-check-input" type="checkbox" id="activar_descuento_general" name="activar_descuento_general" value="1" <?= (isset($cotizacion_edit['descuento_general']) && $cotizacion_edit['descuento_general'] > 0) ? 'checked' : '' ?>>
@@ -116,29 +124,39 @@
                     </div>
                     <hr>
                     <div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" id="es_cerco_electrico" name="es_cerco_electrico" value="1" <?= $cerco_edit ? 'checked' : '' ?>>
+                        <input class="form-check-input" type="checkbox" id="es_cerco_electrico" name="es_cerco_electrico" value="1" <?= !empty($cerco_edit) ? 'checked' : '' ?>>
                         <label class="form-check-label" for="es_cerco_electrico">Es Cerco Eléctrico</label>
                     </div>
-                    <div id="cerco-electrico-fields" class="<?= $cerco_edit ? '' : 'd-none' ?> mt-3">
-                        <div class="mb-3">
-                            <label class="form-label">Metros Lineales</label>
-                            <input type="number" name="metros_lineales" class="form-control" value="<?= htmlspecialchars($cerco_edit['metros_lineales'] ?? '') ?>" placeholder="Ej: 50">
+                    
+                    <!-- Contenedor principal para todos los campos del cerco -->
+                    <div id="cerco-electrico-fields" class="<?= !empty($cerco_edit) ? '' : 'd-none' ?> mt-3 p-3 border rounded bg-light">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Metros Lineales</label>
+                                <input type="number" id="metros_lineales" name="metros_lineales" class="form-control form-control-sm" value="<?= htmlspecialchars($cerco_edit['metros_lineales'] ?? '') ?>" placeholder="Ej: 50">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Número de Hilos</label>
+                                <select name="numero_hilos" id="numero_hilos" class="form-select form-select-sm">
+                                    <option value="4" <?= (($cerco_edit['numero_hilos'] ?? '') == '4') ? 'selected' : '' ?>>4 Hilos</option>
+                                    <option value="5" <?= (($cerco_edit['numero_hilos'] ?? '') == '5') ? 'selected' : '' ?>>5 Hilos</option>
+                                    <option value="6" <?= (($cerco_edit['numero_hilos'] ?? '') == '6') ? 'selected' : '' ?>>6 Hilos</option>
+                                </select>
+                            </div>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">Tipo de Instalación</label>
-                            <select name="tipo_instalacion" class="form-select">
-                                <option value="basica" <?= (($cerco_edit['tipo_instalacion'] ?? '') == 'basica') ? 'selected' : '' ?>>Básica (Muro)</option>
-                                <option value="media" <?= (($cerco_edit['tipo_instalacion'] ?? '') == 'media') ? 'selected' : '' ?>>Media (Pandereta)</option>
-                                <option value="compleja" <?= (($cerco_edit['tipo_instalacion'] ?? '') == 'compleja') ? 'selected' : '' ?>>Compleja (Reja)</option>
-                            </select>
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label for="tipo_instalacion" class="form-label">Tipo de Instalación</label>
+                                <select class="form-select form-select-sm" id="tipo_instalacion" name="tipo_instalacion">
+                                    <option value="basica" <?= (($cerco_edit['tipo_instalacion'] ?? '') == 'basica') ? 'selected' : '' ?>>Básica</option>
+                                    <option value="media" <?= (($cerco_edit['tipo_instalacion'] ?? '') == 'media') ? 'selected' : '' ?>>Media</option>
+                                    <option value="compleja" <?= (($cerco_edit['tipo_instalacion'] ?? '') == 'compleja') ? 'selected' : '' ?>>Compleja</option>
+                                </select>
+                            </div>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">Número de Hilos</label>
-                            <select name="numero_hilos" class="form-select">
-                                <option value="4" <?= (($cerco_edit['numero_hilos'] ?? '') == '4') ? 'selected' : '' ?>>4 Hilos</option>
-                                <option value="5" <?= (($cerco_edit['numero_hilos'] ?? '') == '5') ? 'selected' : '' ?>>5 Hilos</option>
-                                <option value="6" <?= (($cerco_edit['numero_hilos'] ?? '') == '6') ? 'selected' : '' ?>>6 Hilos</option>
-                            </select>
+                        
+                        <div class="d-grid">
+                            <button type="button" id="calcular_cerco_btn" class="btn btn-success btn-sm"><i class="fas fa-calculator me-2"></i>Calcular y Añadir Mano de Obra</button>
                         </div>
                     </div>
                 </div>

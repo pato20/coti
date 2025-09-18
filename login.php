@@ -1,4 +1,10 @@
 <?php
+// Redirigir al instalador si no está instalado
+if (!file_exists('config/database.php')) {
+    header('Location: install.php');
+    exit;
+}
+
 session_start();
 require_once 'config/database.php';
 

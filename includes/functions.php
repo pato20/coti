@@ -136,7 +136,7 @@ function generarPasswordSegura($longitud = 12)
 
 function recalculateQuoteTotals($cotizacion_id)
 {
-    global $pdo;
+    global $pdo, $app_settings;
 
     if (!$pdo) {
         error_log("recalculateQuoteTotals: La conexión PDO no está disponible.");
@@ -166,7 +166,8 @@ function recalculateQuoteTotals($cotizacion_id)
         }
 
         if ($cotizacion && $cotizacion['con_iva']) {
-            $iva = $total * 0.19; // IVA se calcula sobre el total después del descuento general
+            $iva_percentage = $app_settings['iva_porcentaje'] ?? 19;
+            $iva = $total * ($iva_percentage / 100); // IVA se calcula sobre el total después del descuento general
             $total = $total + $iva;
         }
 

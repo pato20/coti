@@ -8,10 +8,17 @@ $current_page = basename($_SERVER['PHP_SELF'], '.php');
     <div class="position-sticky pt-3">
         <div class="text-center mb-4 pb-3 border-bottom border-light">
             <div class="logo-container mb-2">
-                <i class="fas fa-bolt fa-2x text-warning"></i>
+                <?php 
+                    $logo_path = $empresa_info['logo'] ?? null;
+                    if ($logo_path && file_exists($logo_path)):
+                ?>
+                    <img src="<?= htmlspecialchars($logo_path) ?>" alt="Logo" class="brand-image img-fluid rounded-circle" style="max-height: 40px;">
+                <?php else: ?>
+                    <i class="fas fa-bolt fa-2x text-warning"></i>
+                <?php endif; ?>
             </div>
-            <h5 class="text-white mb-1">CyC Electric</h5>
-            <small class="text-light opacity-75">Electricidad e informatica</small>
+            <h5 class="text-white mb-1"><?= htmlspecialchars($empresa_info['nombre'] ?? 'Nombre Empresa') ?></h5>
+            <small class="text-light opacity-75"><?= htmlspecialchars($empresa_info['subtitulo'] ?? '') ?></small>
         </div>
         
         <!-- Added user info section -->
