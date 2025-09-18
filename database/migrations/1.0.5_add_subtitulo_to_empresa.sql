@@ -1,0 +1,2 @@
+ALTER TABLE `empresa` ADD COLUMN `subtitulo` VARCHAR(255) NULL DEFAULT NULL AFTER `nombre` IF
+     NOT EXISTS;

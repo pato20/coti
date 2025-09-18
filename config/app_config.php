@@ -3,7 +3,7 @@
 
 // La versión actual de la aplicación.
 // Este número se comparará con el del servidor de actualizaciones.
-define('APP_VERSION', '1.0.3');
+define('APP_VERSION', '1.0.5');
 
 // URL al archivo JSON del manifiesto de actualización.
 // !! IMPORTANTE !!

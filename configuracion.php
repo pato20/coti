@@ -20,7 +20,8 @@ try {
         'whatsapp_token' => ['valor' => '', 'descripcion' => 'Token de WhatsApp Business API'],
         'whatsapp_phone' => ['valor' => '', 'descripcion' => 'Número de teléfono de WhatsApp'],
         'iva_porcentaje' => ['valor' => '19', 'descripcion' => 'Porcentaje de IVA'],
-        'moneda' => ['valor' => 'CLP', 'descripcion' => 'Moneda del sistema']
+        'moneda' => ['valor' => 'CLP', 'descripcion' => 'Moneda del sistema'],
+        'app_release_notes' => ['valor' => 'Primera instalación.', 'descripcion' => 'Notas de la última versión instalada.']
     ];
 
     $stmt_existing = $pdo->query("SELECT clave FROM configuracion");

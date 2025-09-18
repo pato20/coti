@@ -74,6 +74,9 @@ $current_page = basename($_SERVER['PHP_SELF'], '.php');
                         <li class="nav-item">
                             <a class="nav-link <?php echo ($current_page == 'configuracion') ? 'active-sub' : ''; ?>" href="configuracion.php">General</a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link <?php echo ($current_page == 'ayuda') ? 'active-sub' : ''; ?>" href="ayuda.php">Ayuda</a>
+                        </li>
                         <?php if (is_admin()): ?>
                         <li class="nav-item">
                             <a class="nav-link <?php echo ($current_page == 'updater') ? 'active-sub' : ''; ?>" href="updater.php">Actualizador</a>

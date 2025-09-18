@@ -35,18 +35,10 @@ if ($action === 'run_update') {
     </div>
     <?php
     
+    $update_log = [];
     function log_message($message, $type = 'info') {
-        $escaped_html = json_encode('<div class="log-entry log-' . $type . '"><pre>[' . date('Y-m-d H:i:s') . '] ' . htmlspecialchars($message) . '</pre></div>');
-        echo '<script>\n            var logBox = document.getElementById("update-log");\n            if (logBox) {\n                logBox.innerHTML += ' . $escaped_html . ';\n                logBox.scrollTop = logBox.scrollHeight;\n            }\n        </script>';
-        ob_flush();
-        flush();
-        usleep(100000);
-    }
-
-    function show_final_button() {
-        echo '<script>document.getElementById("back-to-dash").style.display = "block";</script>';
-        ob_flush();
-        flush();
+        global $update_log;
+        $update_log[] = ['message' => $message, 'type' => $type];
     }
 
     // 1. Activar modo mantenimiento
@@ -222,6 +214,13 @@ if ($action === 'run_update') {
         file_put_contents($config_path, $new_config_content);
         log_message("Versión actualizada a $version.", "success");
 
+        // Guardar las notas de la versión en la configuración
+        log_message("Guardando notas de la versión...");
+        $release_notes_content = $manifest_data['release_notes'] ?? 'Actualización sin notas específicas.';
+        $stmt_update_notes = $pdo->prepare("UPDATE configuracion SET valor = ? WHERE clave = 'app_release_notes'");
+        $stmt_update_notes->execute([$release_notes_content]);
+        log_message("Notas de la versión guardadas.", "success");
+
         log_message("Actualización completada con éxito.", "success");
 
     } catch (Exception $e) {
@@ -241,7 +240,14 @@ if ($action === 'run_update') {
         
         @unlink('.maintenance');
         log_message("Modo mantenimiento desactivado.");
-        show_final_button();
+
+        // Mostrar todos los logs y el botón final
+        echo '<script>\n            var logBox = document.getElementById("update-log");\n            if (logBox) {\n                logBox.innerHTML = \'\'; // Limpiar por si acaso
+                ' . json_encode(implode('\n', array_map(function($entry) {
+                    return '<div class="log-entry log-' . $entry['type'] . '"><pre>[' . date('Y-m-d H:i:s') . '] ' . htmlspecialchars($entry['message']) . '</pre></div>';
+                }, $update_log))) . ';\n                logBox.scrollTop = logBox.scrollHeight;\n            }\n            document.getElementById("back-to-dash").style.display = "block";\n        </script>';
+        ob_flush();
+        flush();
     }
 
     require_once 'includes/footer.php';
