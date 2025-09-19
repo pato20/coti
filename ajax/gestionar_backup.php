@@ -19,11 +19,11 @@ $action = $_GET['action'] ?? '';
 // 3. Lógica principal según la acción solicitada
 switch ($action) {
     case 'crear':
-        crearBackup($host, $username, $password, $db_name, $mysql_bin_path);
+        crearBackup(DB_HOST, DB_USER, DB_PASS, DB_NAME, $mysql_bin_path);
         break;
 
     case 'restaurar':
-        restaurarBackup($host, $username, $password, $db_name, $mysql_bin_path);
+        restaurarBackup(DB_HOST, DB_USER, DB_PASS, DB_NAME, $mysql_bin_path);
         break;
 
     default:
