@@ -113,14 +113,28 @@ document.getElementById('formNuevaCategoria').addEventListener('submit', async f
     const data = Object.fromEntries(formData.entries());
     data.action = 'create';
 
-    await fetch('ajax/gestionar_categorias.php', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(data)
-    });
-    this.reset();
-    cargarCategorias();
-    location.reload(); // Recargar para que los selects se actualicen
+    try {
+        const response = await fetch('ajax/gestionar_categorias.php', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            alert(result.message); // Display success message
+            this.reset();
+            cargarCategorias();
+            // No need to reload the entire page if only categories are updated
+            // location.reload(); // Removed for now, can be added back if necessary
+        } else {
+            alert('Error al crear categoría: ' + result.message); // Display error message
+        }
+    } catch (error) {
+        console.error('Error en la comunicación con el servidor:', error);
+        alert('Error en la comunicación con el servidor. Por favor, inténtelo de nuevo.');
+    }
 });
 
 async function actualizarCategoria(id) {

@@ -231,7 +231,7 @@ require_once 'includes/header.php';
             <div class="col-md-4 d-flex gap-2">
                 <button type="submit" class="btn btn-info w-100"><i class="fas fa-filter me-2"></i>Filtrar</button>
                 <a href="catalogo.php" class="btn btn-outline-secondary w-100"><i class="fas fa-times me-2"></i>Limpiar</a>
-                <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#categoryModal" title="Administrar Categorías"><i class="fas fa-tags"></i></button>
+                <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#newCategoryModal" title="Administrar Categorías"><i class="fas fa-tags"></i></button>
             </div>
         </form>
     </div>
@@ -278,22 +278,24 @@ require_once 'includes/header.php';
 </div>
 <?php endif; ?>
 
-<!-- Category Management Modal -->
-<div class="modal fade" id="categoryModal" tabindex="-1">
+
+
+<!-- Nuevo Category Management Modal -->
+<div class="modal fade" id="newCategoryModal" tabindex="-1" aria-labelledby="newCategoryModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title"><i class="fas fa-tags me-2"></i> Administrar Categorías</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <h5 class="modal-title" id="newCategoryModalLabel"><i class="fas fa-tags me-2"></i> Administrar Categorías</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <div id="category-list" class="mb-3"></div>
+                <div id="new-category-list" class="mb-3"></div>
                 <hr>
                 <h6>Añadir/Editar Categoría</h6>
-                <form id="categoryForm" class="row g-2 align-items-end">
-                    <input type="hidden" id="categoryId">
+                <form id="newCategoryForm" class="row g-2 align-items-end">
+                    <input type="hidden" id="newCategoryId">
                     <div class="col">
-                        <input type="text" class="form-control" id="categoryName" placeholder="Nombre de categoría" required>
+                        <input type="text" class="form-control" id="newCategoryName" placeholder="Nombre de categoría" required>
                     </div>
                     <div class="col-auto">
                         <button type="submit" class="btn btn-success"><i class="fas fa-save"></i></button>
@@ -306,86 +308,124 @@ require_once 'includes/header.php';
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const categoryModal = document.getElementById('categoryModal');
-    const categoryListEl = document.getElementById('category-list');
-    const categoryForm = document.getElementById('categoryForm');
-    const categoryIdInput = document.getElementById('categoryId');
-    const categoryNameInput = document.getElementById('categoryName');
+    const newCategoryModal = document.getElementById('newCategoryModal');
+    const newCategoryListEl = document.getElementById('new-category-list');
+    const newCategoryForm = document.getElementById('newCategoryForm');
+    const newCategoryIdInput = document.getElementById('newCategoryId');
+    const newCategoryNameInput = document.getElementById('newCategoryName');
 
-    categoryModal.addEventListener('show.bs.modal', loadCategories);
-    categoryForm.addEventListener('submit', handleCategorySubmit);
+    // Event listener para cuando el modal se muestra
+    newCategoryModal.addEventListener('show.bs.modal', loadNewCategories);
+    // Event listener para el envío del formulario
+    newCategoryForm.addEventListener('submit', handleNewCategorySubmit);
 
-    function handleCategorySubmit(e) {
+    async function loadNewCategories() {
+        newCategoryListEl.innerHTML = '<div class="spinner-border spinner-border-sm"></div>';
+        try {
+            const response = await fetch('ajax/categorias_api.php');
+            const data = await response.json();
+
+            if (data.success) {
+                let html = '<ul class="list-group">';
+                data.categorias.forEach(cat => {
+                    html += `<li class="list-group-item d-flex justify-content-between align-items-center">
+                        ${escapeHTML(cat.nombre)}
+                        <div>
+                            <button class="btn btn-sm btn-outline-primary me-2" onclick="editNewCategory(${cat.id}, '${escapeHTML(cat.nombre)}')"><i class="fas fa-edit"></i></button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteNewCategory(${cat.id})"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </li>`;
+                });
+                html += '</ul>';
+                newCategoryListEl.innerHTML = html;
+            } else {
+                newCategoryListEl.innerHTML = `<div class="alert alert-warning">${data.message}</div>`;
+            }
+        } catch (error) {
+            console.error('Error al cargar categorías:', error);
+            newCategoryListEl.innerHTML = `<div class="alert alert-danger">Error al cargar categorías.</div>`;
+        }
+    }
+
+    async function handleNewCategorySubmit(e) {
         e.preventDefault();
-        const id = categoryIdInput.value;
-        const name = categoryNameInput.value.trim();
-        if (name) {
-            const action = id ? 'update' : 'create';
-            fetch('ajax/gestionar_categorias.php', {
+        const id = newCategoryIdInput.value;
+        const name = newCategoryNameInput.value.trim();
+        const type = 'producto'; // Asignar un tipo por defecto
+
+        if (!name) {
+            alert('Por favor, ingrese el nombre de la categoría.');
+            return;
+        }
+
+        const action = id ? 'update' : 'create';
+        const payload = { action, nombre: name, tipo: type };
+        if (id) {
+            payload.id = id;
+        }
+
+        try {
+            const response = await fetch('ajax/categorias_api.php', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ action, id, nombre: name })
-            }).then(res => res.json()).then(data => {
-                if (data.success) {
-                    loadCategories();
-                    categoryForm.reset();
-                    categoryIdInput.value = '';
-                } else {
-                    alert(data.message);
-                }
+                body: JSON.stringify(payload)
             });
+            const result = await response.json();
+
+            if (result.success) {
+                alert(result.message);
+                newCategoryForm.reset();
+                newCategoryIdInput.value = '';
+                loadNewCategories(); // Recargar la lista de categorías
+                location.reload(); // Recargar la página para actualizar los selects de categoría en el formulario principal
+            } else {
+                alert('Error: ' + result.message);
+            }
+        } catch (error) {
+            console.error('Error en la comunicación con el servidor:', error);
+            alert('Error en la comunicación con el servidor. Por favor, inténtelo de nuevo.');
         }
     }
 
-    function loadCategories() {
-        categoryListEl.innerHTML = '<div class="spinner-border spinner-border-sm"></div>';
-        fetch('ajax/gestionar_categorias.php')
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    let html = '<ul class="list-group">';
-                    data.categorias.forEach(cat => {
-                        html += `<li class="list-group-item d-flex justify-content-between align-items-center">
-                            ${escapeHTML(cat.nombre)}
-                            <div>
-                                <button class="btn btn-sm btn-outline-primary me-2" onclick="editCategory(${cat.id}, '${escapeHTML(cat.nombre)}')"><i class="fas fa-edit"></i></button>
-                                <button class="btn btn-sm btn-outline-danger" onclick="deleteCategory(${cat.id})"><i class="fas fa-trash"></i></button>
-                            </div>
-                        </li>`;
-                    });
-                    html += '</ul>';
-                    categoryListEl.innerHTML = html;
-                } else {
-                    categoryListEl.innerHTML = `<div class="alert alert-warning">${data.message}</div>`;
-                }
-            });
+    window.editNewCategory = function(id, name) {
+        newCategoryIdInput.value = id;
+        newCategoryNameInput.value = name;
+        newCategoryNameInput.focus();
     }
 
-    window.editCategory = function(id, name) {
-        categoryIdInput.value = id;
-        categoryNameInput.value = name;
-        categoryNameInput.focus();
-    }
+    window.deleteNewCategory = async function(id) {
+        if (confirm('¿Está seguro de que desea eliminar esta categoría? Si está en uso, no se podrá eliminar.')) {
+            try {
+                const response = await fetch('ajax/categorias_api.php', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ action: 'delete', id })
+                });
+                const result = await response.json();
 
-    window.deleteCategory = function(id) {
-        if (confirm('¿Seguro que quieres eliminar esta categoría?')) {
-            fetch('ajax/gestionar_categorias.php', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ action: 'delete', id })
-            }).then(res => res.json()).then(data => {
-                if (data.success) {
-                    loadCategories();
+                if (result.success) {
+                    alert(result.message);
+                    loadNewCategories(); // Recargar la lista de categorías
+                    location.reload(); // Recargar la página para actualizar los selects de categoría en el formulario principal
                 } else {
-                    alert(data.message);
+                    alert('Error: ' + result.message);
                 }
-            });
+            } catch (error) {
+                console.error('Error en la comunicación con el servidor:', error);
+                alert('Error en la comunicación con el servidor. Por favor, inténtelo de nuevo.');
+            }
         }
     }
 
+    // Función auxiliar para escapar HTML
     function escapeHTML(str) {
         return str.replace(/[&<>"'`]/g, match => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;', '`': '&#x60;' }[match]));
     }
+
+    // La función ucfirst ya no es necesaria si no se muestra el tipo
+    // function ucfirst(str) {
+    //     return str.charAt(0).toUpperCase() + str.slice(1);
+    // }
 });
 </script>
 

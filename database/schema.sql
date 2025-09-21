@@ -343,7 +343,7 @@ CREATE TABLE `empresa` (
 
 LOCK TABLES `empresa` WRITE;
 /*!40000 ALTER TABLE `empresa` DISABLE KEYS */;
-INSERT INTO `empresa` VALUES (1,'CyC Electric Ltda.','77860655-0','Psje. San Guillermo N°486','+569 3032 4907','patocampos20@gmail.com','+569 3032 4907',NULL,'2025-08-27 02:43:36');
+INSERT INTO `empresa` VALUES (1,'CyC Electric Ltda.','electricidad e informatica','77860655-0','Psje. San Guillermo N°486','+569 3032 4907','patocampos20@gmail.com','+569 3032 4907',NULL,'2025-08-27 02:43:36');
 /*!40000 ALTER TABLE `empresa` ENABLE KEYS */;
 UNLOCK TABLES;
 

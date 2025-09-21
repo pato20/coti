@@ -18,7 +18,7 @@ if (!$cotizacion_id || !$estado) {
     exit;
 }
 
-$estados_validos = ['pendiente', 'enviada', 'aceptada', 'rechazada'];
+$estados_validos = ['pendiente', 'enviada', 'aceptada', 'rechazada', 'vencida'];
 if (!in_array($estado, $estados_validos)) {
     echo json_encode(['success' => false, 'message' => 'Estado no válido']);
     exit;

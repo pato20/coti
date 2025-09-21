@@ -47,7 +47,7 @@ $proximas_visitas = $stmt->fetchAll();
                             <td><?= htmlspecialchars($visita['titulo']) ?></td>
                             <td><?= htmlspecialchars($visita['cliente_nombre'] ?? 'N/A') ?></td>
                             <?php if ($user_rol == 'admin'): ?><td><?= htmlspecialchars($visita['usuario_nombre'] ?? 'N/A') ?></td><?php endif; ?>
-                            <td><span class="badge bg-info"><?= ucfirst($visita['tipo']) ?></span></td>
+                            <td><span class="badge bg-<?= getEstadoColor($visita['estado']) ?>"><?= htmlspecialchars(ucfirst($visita['estado'])) ?></span></td>
                             <td>
                                 <button class="btn btn-sm btn-outline-primary" onclick='abrirModalEvento(<?= json_encode($visita) ?>)'><i class="fas fa-edit"></i></button>
                             </td>

@@ -34,8 +34,8 @@ $ultimas_ordenes_completadas = $pdo->query("SELECT ot.*, c.nombre as cliente_nom
 // Próximas Visitas Técnicas (sin OT asociada)
 $proximas_visitas_sql = "SELECT a.*, c.nombre as cliente_nombre 
     FROM agenda a 
-    JOIN clientes c ON a.cliente_id = c.id 
-    WHERE a.fecha_hora_inicio >= NOW() AND a.orden_id IS NULL AND a.tipo = 'visita'";
+    LEFT JOIN clientes c ON a.cliente_id = c.id 
+    WHERE a.orden_id IS NULL";
 if ($_SESSION['rol'] != 'admin') {
     $proximas_visitas_sql .= " AND a.usuario_id = :usuario_id";
 }
@@ -48,24 +48,7 @@ if ($_SESSION['rol'] != 'admin') {
 }
 $proximas_visitas = $stmt_visitas->fetchAll(PDO::FETCH_ASSOC);
 
-// Próximas Instalaciones/Mantenciones (con OT)
-$proximas_ot_sql = "SELECT a.*, c.nombre as cliente_nombre, ot.numero_orden
-    FROM agenda a
-    JOIN ordenes_trabajo ot ON a.orden_id = ot.id
-    JOIN cotizaciones cot ON ot.cotizacion_id = cot.id
-    JOIN clientes c ON cot.cliente_id = c.id
-    WHERE a.fecha_hora_inicio >= NOW() AND a.tipo IN ('instalacion', 'mantencion')";
-if ($_SESSION['rol'] != 'admin') {
-    $proximas_ot_sql .= " AND a.usuario_id = :usuario_id";
-}
-$proximas_ot_sql .= " ORDER BY a.fecha_hora_inicio ASC LIMIT 5";
-$stmt_ot = $pdo->prepare($proximas_ot_sql);
-if ($_SESSION['rol'] != 'admin') {
-    $stmt_ot->execute(['usuario_id' => $_SESSION['usuario_id']]);
-} else {
-    $stmt_ot->execute();
-}
-$proximas_ots = $stmt_ot->fetchAll(PDO::FETCH_ASSOC);
+
 
 
 require_once 'includes/header.php';
@@ -176,35 +159,21 @@ require_once 'includes/header.php';
                     <?php foreach ($proximas_visitas as $visita): ?>
                         <li class="list-group-item">
                             <div class="d-flex justify-content-between">
-                                <span class="fw-bold"><?= htmlspecialchars($visita['cliente_nombre']) ?></span>
+                                <span class="fw-bold">
+                                    <a href="agenda.php?id=<?= $visita['id'] ?>" class="text-decoration-none">
+                                        <?= htmlspecialchars($visita['cliente_nombre'] ?? 'Sin Cliente Registrado') ?>
+                                    </a>
+                                </span>
                                 <span class="text-muted"><?= date('d/m/y H:i', strtotime($visita['fecha_hora_inicio'])) ?></span>
                             </div>
-                            <small class="text-muted"><?= htmlspecialchars($visita['titulo']) ?></small>
+                            <small class="text-muted"><?= htmlspecialchars(isset($visita['titulo']) && is_string($visita['titulo']) ? $visita['titulo'] : '') ?></small>
                         </li>
                     <?php endforeach; ?>
                 <?php endif; ?>
             </ul>
         </div>
 
-        <!-- Próximas Instalaciones/Mantenciones (Con OT) -->
-        <div class="card shadow-sm mb-4">
-            <div class="card-header"><h5><i class="fas fa-tools me-2"></i>Próximas Instalaciones / Mantenciones</h5></div>
-            <ul class="list-group list-group-flush">
-                <?php if (empty($proximas_ots)): ?>
-                    <li class="list-group-item text-muted">No hay trabajos programados.</li>
-                <?php else: ?>
-                    <?php foreach ($proximas_ots as $ot_agenda): ?>
-                        <li class="list-group-item">
-                            <div class="d-flex justify-content-between">
-                                <a href="ordenes.php?action=view&id=<?= $ot_agenda['orden_id'] ?>" class="fw-bold"><?= htmlspecialchars($ot_agenda['cliente_nombre']) ?></a>
-                                <span class="text-muted"><?= date('d/m/y H:i', strtotime($ot_agenda['fecha_hora_inicio'])) ?></span>
-                            </div>
-                            <small><?= htmlspecialchars($ot_agenda['titulo']) ?> (#<?= htmlspecialchars($ot_agenda['numero_orden']) ?>)</small>
-                        </li>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-            </ul>
-        </div>
+        
     </div>
 </div>
 

@@ -11,15 +11,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
-// Incluir el autoloader de Composer y la configuración de la base de datos
-require_once __DIR__ . '/../vendor/autoload.php';
+// Incluir archivos de configuración
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../config/app_config.php';
+require_once __DIR__ . '/../vendor/autoload.php';
 
 use \Firebase\JWT\JWT;
-
-// Clave secreta para firmar el token. ¡CAMBIAR ESTO POR UNA CADENA LARGA Y SEGURA!
-// Puedes generar una en: https://randomkeygen.com/
-$secret_key = "TU_CLAVE_SECRETA_SUPER_SEGURA_AQUI";
 
 // Leer el cuerpo de la petición
 $data = json_decode(file_get_contents("php://input"));
@@ -34,60 +31,56 @@ if (!isset($data->username) || !isset($data->password)) {
 $username = $data->username;
 $password = $data->password;
 
-// Conectar a la base de datos
-$conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
-if ($conn->connect_error) {
-    http_response_code(500); // Internal Server Error
-    echo json_encode(["message" => "Error de conexión a la base de datos."]);
-    exit();
-}
-
-// Buscar al usuario en la base de datos
-$stmt = $conn->prepare("SELECT id, username, password, role FROM usuarios WHERE username = ?");
-$stmt->bind_param("s", $username);
-$stmt->execute();
-$result = $stmt->get_result();
-$user = $result->fetch_assoc();
-
-// Verificar si el usuario existe y la contraseña es correcta
-if ($user && password_verify($password, $user['password'])) {
+try {
+    // Buscar al usuario en la base de datos usando PDO
+    $stmt = $pdo->prepare("SELECT id, username, password, role FROM usuarios WHERE username = :username");
+    $stmt->bindParam(':username', $username);
+    $stmt->execute();
     
-    $issuer_claim = "CERCO_APP_SERVER"; // puede ser el dominio de tu servidor
-    $audience_claim = "CERCO_APP";
-    $issuedat_claim = time(); // hora en que se emitió el token
-    $notbefore_claim = $issuedat_claim; // token válido desde ahora
-    $expire_claim = $issuedat_claim + (3600 * 24); // expira en 24 horas
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    $token = array(
-        "iss" => $issuer_claim,
-        "aud" => $audience_claim,
-        "iat" => $issuedat_claim,
-        "nbf" => $notbefore_claim,
-        "exp" => $expire_claim,
-        "data" => array(
-            "id" => $user['id'],
-            "username" => $user['username'],
-            "role" => $user['role']
-        )
-    );
+    // Verificar si el usuario existe y la contraseña es correcta
+    if ($user && password_verify($password, $user['password'])) {
+        
+        $issuer_claim = "CERCO_APP_SERVER"; // puede ser el dominio de tu servidor
+        $audience_claim = "CERCO_APP";
+        $issuedat_claim = time(); // hora en que se emitió el token
+        $notbefore_claim = $issuedat_claim; // token válido desde ahora
+        $expire_claim = $issuedat_claim + (3600 * 24); // expira en 24 horas
 
-    http_response_code(200); // OK
+        $token = array(
+            "iss" => $issuer_claim,
+            "aud" => $audience_claim,
+            "iat" => $issuedat_claim,
+            "nbf" => $notbefore_claim,
+            "exp" => $expire_claim,
+            "data" => array(
+                "id" => $user['id'],
+                "username" => $user['username'],
+                "role" => $user['role']
+            )
+        );
 
-    // Generar el JWT
-    $jwt = JWT::encode($token, $secret_key, 'HS256');
-    echo json_encode(
-        array(
-            "message" => "Login exitoso.",
-            "token" => $jwt,
-            "expiresIn" => $expire_claim
-        )
-    );
+        http_response_code(200); // OK
 
-} else {
-    http_response_code(401); // Unauthorized
-    echo json_encode(["message" => "Login fallido. Credenciales incorrectas."]);
+        // Generar el JWT usando la clave secreta de la configuración
+        $jwt = JWT::encode($token, JWT_SECRET_KEY, 'HS256');
+        echo json_encode(
+            array(
+                "message" => "Login exitoso.",
+                "token" => $jwt,
+                "expiresIn" => $expire_claim
+            )
+        );
+
+    } else {
+        http_response_code(401); // Unauthorized
+        echo json_encode(["message" => "Login fallido. Credenciales incorrectas."]);
+    }
+
+} catch (Exception $e) {
+    http_response_code(500); // Internal Server Error
+    echo json_encode(["message" => "Error en el servidor.", "error" => $e->getMessage()]);
 }
 
-$stmt->close();
-$conn->close();
 ?>

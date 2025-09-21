@@ -1,0 +1,16 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Redirige las peticiones a la raíz de /api/ al script principal que desees (o muestra un error)
+    RewriteRule ^$ - [F] 
+
+    # Condición para asegurarse de que el archivo solicitado no es un archivo o directorio real
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+
+    # Reescribe la URL para que sea manejada por el script PHP correspondiente
+    # Ej: /api/productos/1 -> /api/productos.php?path=/productos/1
+    # Ej: /api/clientes -> /api/clientes.php?path=/clientes
+    RewriteRule ^([a-zA-Z0-9_-]+)/?.*$ $1.php?path=$0 [L,QSA]
+
+</IfModule>

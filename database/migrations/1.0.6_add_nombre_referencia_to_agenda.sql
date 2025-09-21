@@ -1,0 +1,2 @@
+ALTER TABLE agenda
+ADD COLUMN nombre_referencia VARCHAR(255) DEFAULT NULL;

@@ -2,14 +2,21 @@
 // Funciones de Autenticación y Permisos
 
 /**
- * Verifica si el usuario ha iniciado sesión. Si no, redirige a login.php.
+ * Verifica si el usuario ha iniciado sesión. Si no, redirige a login.php o devuelve un error JSON.
+ * @param bool  $is_ajax          Si es true, devuelve un error JSON en lugar de redirigir.
  */
-function verificarAuth() {
+function verificarAuth(bool $is_ajax = false) {
     if (session_status() == PHP_SESSION_NONE) {
         session_start();
     }
     if (!isset($_SESSION['usuario_id'])) {
-        header('Location: login.php');
+        if ($is_ajax) {
+            header('Content-Type: application/json');
+            http_response_code(401); // Unauthorized
+            echo json_encode(['success' => false, 'message' => 'No autenticado. Por favor, inicie sesión.']);
+        } else {
+            header('Location: login.php');
+        }
         exit;
     }
 }

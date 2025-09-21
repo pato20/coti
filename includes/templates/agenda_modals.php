@@ -22,7 +22,7 @@
                         </select>
                     </div>
                     <div class="form-check mb-3">
-                        <input class="form-check-input" type="checkbox" id="sinClienteCheck">
+                        <input class="form-check-input" type="checkbox" id="sinClienteCheck" name="sin_cliente_registrado" value="true">
                         <label class="form-check-label" for="sinClienteCheck">
                             Visita sin cliente registrado
                         </label>
@@ -50,6 +50,14 @@
                             <option value="mantencion">Mantención</option>
                         </select>
                     </div>
+                    <div class="mb-3">
+                        <label class="form-label">Estado</label>
+                        <select name="estado" id="eventoEstado" class="form-select">
+                            <option value="pendiente">Pendiente</option>
+                            <option value="completada">Completada</option>
+                            <option value="cancelada">Cancelada</option>
+                        </select>
+                    </div>
 
                     <div id="delete-section" style="display: none;"><hr><button type="button" class="btn btn-danger" onclick="eliminarEvento()"><i class="fas fa-trash"></i> Eliminar</button></div>
                 </div>
@@ -69,37 +77,61 @@ document.addEventListener('DOMContentLoaded', function() {
     const nombreReferenciaDiv = document.getElementById('nombre-referencia-div');
     const clienteSelect = document.getElementById('eventoCliente');
     const nombreReferenciaInput = document.getElementById('nombreReferencia');
-
-    if (sinClienteCheck) {
-        sinClienteCheck.addEventListener('change', function() {
-            if (this.checked) {
-                clienteSelectDiv.classList.add('d-none');
-                nombreReferenciaDiv.classList.remove('d-none');
-                clienteSelect.disabled = true;
-                nombreReferenciaInput.disabled = false;
-                clienteSelect.value = '';
-            } else {
-                clienteSelectDiv.classList.remove('d-none');
-                nombreReferenciaDiv.classList.add('d-none');
-                clienteSelect.disabled = false;
-                nombreReferenciaInput.disabled = true;
-            }
-        });
-    }
-
-    // Reset form state when modal is opened
     const eventoModal = document.getElementById('eventoModal');
-    if (eventoModal) {
-        eventoModal.addEventListener('show.bs.modal', function () {
-            if (sinClienteCheck) {
-                sinClienteCheck.checked = false;
-            }
+    const eventoTituloInput = document.getElementById('eventoTitulo');
+    const eventoIdInput = document.getElementById('eventoId');
+    const eventoFechaInput = document.getElementById('eventoFecha');
+    const eventoDescripcionInput = document.getElementById('eventoDescripcion');
+    const eventoTipoSelect = document.getElementById('eventoTipo');
+    const eventoEstadoSelect = document.getElementById('eventoEstado');
+    const eventoUsuarioSelect = document.getElementById('eventoUsuario');
+    const deleteSection = document.getElementById('delete-section');
+
+    function toggleClienteFields(isSinCliente) {
+        if (isSinCliente) {
+            clienteSelectDiv.classList.add('d-none');
+            nombreReferenciaDiv.classList.remove('d-none');
+            clienteSelect.disabled = true;
+            nombreReferenciaInput.disabled = false;
+            clienteSelect.value = '';
+        } else {
             clienteSelectDiv.classList.remove('d-none');
             nombreReferenciaDiv.classList.add('d-none');
             clienteSelect.disabled = false;
             nombreReferenciaInput.disabled = true;
             nombreReferenciaInput.value = '';
+        }
+    }
+
+    if (sinClienteCheck) {
+        sinClienteCheck.addEventListener('change', function() {
+            toggleClienteFields(this.checked);
+        });
+    }
+
+    if (eventoModal) {
+        eventoModal.addEventListener('show.bs.modal', function (event) {
+            // Resetear formulario y campos
+            document.getElementById('eventoForm').reset();
+            eventoIdInput.value = '';
+            deleteSection.style.display = 'none';
+            if (sinClienteCheck) {
+                sinClienteCheck.checked = false;
+            }
+            toggleClienteFields(false); // Resetear a estado por defecto
+            eventoEstadoSelect.value = 'pendiente'; // Estado por defecto
+
+            // The data population and title setting is handled by abrirModalEvento in agenda.js
+            // This listener only performs a reset and initial state setup.
+            
+            // For new visit, ensure title is empty and status is pending
+            const button = event.relatedTarget; // Botón que disparó el modal
+            const isEdit = button && button.dataset.evento; // Si viene de un botón de edición
+            if (!isEdit) {
+                document.getElementById('modalTitulo').innerText = 'Nueva Visita'; // Set title for new visit
+                eventoTituloInput.value = '';
+                eventoEstadoSelect.value = 'pendiente';
+            }
         });
     }
 });
-</script>

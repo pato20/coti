@@ -12,7 +12,7 @@ if (isset($_GET['action']) && $_GET['action'] == 'get_events') {
     $start = $_GET['start'] ?? date('Y-m-01');
     $end = $_GET['end'] ?? date('Y-m-t');
     
-    $query = "SELECT id, titulo as title, fecha_hora_inicio as start, fecha_hora_fin as end, tipo FROM agenda WHERE fecha_hora_inicio BETWEEN ? AND ?";
+    $query = "SELECT id, titulo as title, fecha_hora_inicio as start, fecha_hora_fin as end, tipo, cliente_id, usuario_id, descripcion, nombre_referencia, estado FROM agenda WHERE fecha_hora_inicio BETWEEN ? AND ?";
     $params = [$start, $end];
     if ($user_rol != 'admin') {
         $query .= " AND usuario_id = ?";
@@ -33,24 +33,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $asignado_a = ($user_rol == 'admin' && !empty($_POST['usuario_id'])) ? $_POST['usuario_id'] : $user_id;
             
             $cliente_id = null;
-            $titulo = $_POST['titulo'];
+            $nombre_referencia = null;
+            $titulo_original = $_POST['titulo'];
+            $estado = $_POST['estado'] ?? 'pendiente'; // Nuevo campo estado
 
-            // Si se proporciona un nombre de referencia, es una visita sin cliente registrado.
-            if (!empty($_POST['nombre_referencia'])) {
-                $cliente_id = null;
-                $titulo = $_POST['nombre_referencia'] . " - " . $titulo;
+            // Si se marca como visita sin cliente registrado
+            if (isset($_POST['sin_cliente_registrado']) && $_POST['sin_cliente_registrado'] === 'true') {
+                $nombre_referencia = $_POST['nombre_referencia'];
+                $titulo = $nombre_referencia . " - " . $titulo_original;
             } else if (!empty($_POST['cliente_id'])) {
-                // Si no, se usa el cliente seleccionado (si lo hay).
                 $cliente_id = $_POST['cliente_id'];
+                $titulo = $titulo_original; // Usar el título original si hay cliente
+            } else {
+                $titulo = $titulo_original;
             }
 
             if ($evento_id) {
-                $stmt = $pdo->prepare("UPDATE agenda SET usuario_id=?, cliente_id=?, titulo=?, descripcion=?, fecha_hora_inicio=?, tipo=? WHERE id=?");
-                $stmt->execute([$asignado_a, $cliente_id, $titulo, $_POST['descripcion'], $_POST['fecha_hora_inicio'], $_POST['tipo'], $evento_id]);
+                $stmt = $pdo->prepare("UPDATE agenda SET usuario_id=?, cliente_id=?, nombre_referencia=?, titulo=?, descripcion=?, fecha_hora_inicio=?, tipo=?, estado=? WHERE id=?");
+                $stmt->execute([$asignado_a, $cliente_id, $nombre_referencia, $titulo, $_POST['descripcion'], $_POST['fecha_hora_inicio'], $_POST['tipo'], $estado, $evento_id]);
                 $_SESSION['success_message'] = "Visita actualizada.";
             } else {
-                $stmt = $pdo->prepare("INSERT INTO agenda (usuario_id, cliente_id, titulo, descripcion, fecha_hora_inicio, tipo) VALUES (?, ?, ?, ?, ?, ?)");
-                $stmt->execute([$asignado_a, $cliente_id, $titulo, $_POST['descripcion'], $_POST['fecha_hora_inicio'], $_POST['tipo']]);
+                $stmt = $pdo->prepare("INSERT INTO agenda (usuario_id, cliente_id, nombre_referencia, titulo, descripcion, fecha_hora_inicio, tipo, estado) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmt->execute([$asignado_a, $cliente_id, $nombre_referencia, $titulo, $_POST['descripcion'], $_POST['fecha_hora_inicio'], $_POST['tipo'], $estado]);
                 $_SESSION['success_message'] = "Visita agendada.";
             }
         } elseif ($_POST['action'] === 'delete') {

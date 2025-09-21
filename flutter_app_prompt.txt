@@ -1,0 +1,204 @@
+
+# Prompt para crear una aplicación completa en Flutter
+
+## 1. Resumen del Proyecto
+
+El objetivo es desarrollar una aplicación móvil completa en Flutter para la gestión de un negocio llamado "Cerco Eléctrico". La aplicación permitirá a los usuarios gestionar clientes, productos/servicios, cotizaciones y órdenes de trabajo. También incluirá un módulo de gestión de usuarios solo para administradores.
+
+La aplicación se conectará a una API PHP/MySQL existente. La autenticación se basa en tokens JWT (JSON Web Tokens).
+
+## 2. Especificaciones Técnicas
+
+- **Framework:** Flutter
+- **Lenguaje:** Dart
+- **Gestión de Estado:** Utilizar Riverpod o BLoC para una gestión de estado escalable.
+- **Peticiones HTTP:** Utilizar el paquete `dio` o `http` para las llamadas a la API.
+- **Almacenamiento Seguro:** Utilizar `flutter_secure_storage` para guardar el token JWT.
+- **Diseño:** UI/UX limpia y moderna, siguiendo los principios de Material Design 3.
+
+## 3. Especificación de la API
+
+La URL base de la API es: `http://tu_dominio.com/api`
+
+### 3.1. Autenticación
+
+**Endpoint de Login:**
+- **Método:** `POST`
+- **URL:** `/login`
+- **Cuerpo (Request Body):**
+  ```json
+  {
+      "username": "tu_usuario",
+      "password": "tu_contraseña"
+  }
+  ```
+- **Respuesta Exitosa (Success Response):**
+  ```json
+  {
+      "message": "Login exitoso.",
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+      "expiresIn": 1678886400
+  }
+  ```
+- **Flujo de la App:**
+  1. Al iniciar, la app debe verificar si existe un token válido en `flutter_secure_storage`.
+  2. Si hay un token, se navega a la pantalla principal. Si no, se muestra la pantalla de Login.
+  3. En el login, se envían las credenciales. Si es exitoso, se guarda el token y se navega a la pantalla principal.
+  4. Para todas las peticiones subsecuentes a la API, se debe incluir el token en la cabecera `Authorization` como `Bearer {token}`.
+  5. Implementar un interceptor (con `dio`) para manejar errores 401 (Unauthorized) y redirigir al login si el token expira.
+
+### 3.2. API de Recursos (CRUD)
+
+Todos los siguientes endpoints requieren la cabecera de autenticación `Authorization: Bearer {token}`.
+
+#### **Productos (`/productos`)**
+- **Modelo de Datos (Dart):**
+  ```dart
+  class Producto {
+    int id;
+    String nombre;
+    String? descripcion;
+    double precio;
+    String unidad;
+    int? categoriaId;
+    String? proveedor;
+    String? codigoProveedor;
+  }
+  ```
+- **Endpoints:**
+  - `GET /productos`: Obtiene una lista de todos los productos.
+  - `GET /productos/{id}`: Obtiene un producto específico.
+  - `POST /productos`: Crea un nuevo producto. **Cuerpo:** Objeto JSON del producto (sin `id`).
+  - `PUT /productos/{id}`: Actualiza un producto existente. **Cuerpo:** Objeto JSON del producto.
+  - `DELETE /productos/{id}`: Elimina un producto.
+
+#### **Clientes (`/clientes`)**
+- **Modelo de Datos (Dart):**
+  ```dart
+  class Cliente {
+    int id;
+    String nombre;
+    String? rut;
+    String? email;
+    String? telefono;
+    String? direccion;
+  }
+  ```
+- **Endpoints:**
+  - `GET /clientes`: Obtiene una lista de todos los clientes.
+  - `GET /clientes/{id}`: Obtiene un cliente específico.
+  - `POST /clientes`: Crea un nuevo cliente. **Cuerpo:** Objeto JSON del cliente (sin `id`).
+  - `PUT /clientes/{id}`: Actualiza un cliente existente. **Cuerpo:** Objeto JSON del cliente.
+  - `DELETE /clientes/{id}`: Elimina un cliente.
+
+#### **Cotizaciones (`/cotizaciones`)**
+- **Modelo de Datos (Dart):**
+  ```dart
+  class Cotizacion {
+    int id;
+    String numeroCotizacion;
+    int clienteId;
+    DateTime fechaCotizacion;
+    DateTime? fechaVencimiento;
+    double? subtotal;
+    double? iva;
+    double total;
+    String estado; // 'pendiente', 'enviada', 'aceptada', 'rechazada', 'vencida'
+    String? observaciones;
+    bool requiereMantencion;
+    bool conIva;
+    int? usuarioId;
+    double? descuentoGeneral;
+  }
+  ```
+- **Endpoints:**
+  - `GET /cotizaciones`: Obtiene una lista de todas las cotizaciones.
+  - `GET /cotizaciones/{id}`: Obtiene una cotización específica.
+  - `POST /cotizaciones`: Crea una nueva cotización. **Cuerpo:** Objeto JSON. `usuario_id` se asigna automáticamente en el backend.
+  - `PUT /cotizaciones/{id}`: Actualiza una cotización. **Cuerpo:** Objeto JSON.
+  - `DELETE /cotizaciones/{id}`: Elimina una cotización.
+
+#### **Órdenes de Trabajo (`/ordenes`)**
+- **Modelo de Datos (Dart):**
+  ```dart
+  class OrdenTrabajo {
+    int id;
+    String numeroOrden;
+    int? cotizacionId;
+    int clienteId;
+    DateTime? fechaInicio;
+    DateTime? fechaEstimadaFin;
+    DateTime? fechaRealFin;
+    String estado; // 'pendiente', 'en_proceso', 'pausada', 'completada', 'cancelada'
+    double? porcentajeAvance;
+    double montoTotal;
+    double montoPagado;
+    String estadoPago; // 'pendiente', 'abonado', 'pagado'
+    String? observaciones;
+    int? tecnicoId;
+  }
+  ```
+- **Endpoints:**
+  - `GET /ordenes`: Obtiene una lista de todas las órdenes.
+  - `GET /ordenes/{id}`: Obtiene una orden específica.
+  - `POST /ordenes`: Crea una nueva orden. **Cuerpo:** Objeto JSON.
+  - `PUT /ordenes/{id}`: Actualiza una orden. **Cuerpo:** Objeto JSON.
+  - `DELETE /ordenes/{id}`: Elimina una orden.
+
+#### **Usuarios (`/usuarios`) - Solo Administradores**
+- **Modelo de Datos (Dart):**
+  ```dart
+  class Usuario {
+    int id;
+    String username;
+    String email;
+    String nombreCompleto;
+    String rol; // 'admin', 'vendedor', 'tecnico'
+    bool activo;
+  }
+  ```
+- **Endpoints:**
+  - `GET /usuarios`: Obtiene una lista de todos los usuarios.
+  - `GET /usuarios/{id}`: Obtiene un usuario específico.
+  - `POST /usuarios`: Crea un nuevo usuario. **Cuerpo:** Objeto JSON con `password`.
+  - `PUT /usuarios/{id}`: Actualiza un usuario. **Cuerpo:** Objeto JSON. El campo `password` es opcional.
+  - `DELETE /usuarios/{id}`: Elimina un usuario.
+- **Control de Acceso:** El acceso a esta sección de la app debe estar condicionado por el rol del usuario logueado (`rol == 'admin'`). El rol se obtiene del token decodificado o de una petición al perfil del usuario.
+
+## 4. Diseño de Pantallas y Flujo de Navegación
+
+### 4.1. Navegación Principal
+- Usar un `Scaffold` con un `BottomNavigationBar` o un `Drawer` para navegar entre las secciones principales:
+  - Dashboard (Inicio)
+  - Clientes
+  - Productos
+  - Cotizaciones
+  - Órdenes de Trabajo
+  - Usuarios (Visible solo para administradores)
+  - Logout (Cerrar Sesión)
+
+### 4.2. Pantallas por Sección
+
+Para cada sección (Clientes, Productos, Cotizaciones, Órdenes, Usuarios), implementar un flujo CRUD completo:
+
+1.  **Pantalla de Lista (`ListView`):**
+    - Muestra los registros obtenidos de la API (`GET /recurso`).
+    - Cada item debe mostrar información clave (ej. nombre del cliente, total de la cotización).
+    - Cada item debe tener botones o gestos para **Editar** y **Eliminar**.
+    - Incluir un `FloatingActionButton` para navegar a la pantalla de creación.
+    - Implementar un `Pull-to-Refresh` para recargar los datos.
+    - Mostrar un indicador de carga (`CircularProgressIndicator`) mientras se obtienen los datos.
+
+2.  **Pantalla de Creación/Edición (`Form`):**
+    - Un formulario con `TextFormField` y otros widgets para cada campo del modelo.
+    - Para la edición, el formulario debe cargarse con los datos del registro existente (`GET /recurso/{id}`).
+    - Realizar validación de campos (ej. campos no vacíos, formato de email).
+    - Un botón "Guardar" que ejecute la petición `POST` (crear) o `PUT` (actualizar).
+    - Mostrar feedback al usuario (ej. `SnackBar` o `Toast`) al completar la operación.
+
+### 4.3. Consideraciones Específicas
+
+- **Cotizaciones y Órdenes:** Los formularios de creación/edición deben incluir `DropdownButton` para seleccionar clientes y/o técnicos existentes (cargados desde `/api/clientes` y `/api/usuarios`).
+- **Eliminación:** Antes de ejecutar una petición `DELETE`, mostrar un diálogo de confirmación (`AlertDialog`) para evitar eliminaciones accidentales.
+- **Manejo de Errores:** Si una petición a la API falla, mostrar un diálogo o `SnackBar` con el mensaje de error devuelto por la API.
+- **Estado Vacío:** En las pantallas de lista, si la API no devuelve registros, mostrar un mensaje amigable como "No hay clientes para mostrar. ¡Añade uno nuevo!".

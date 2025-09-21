@@ -2,16 +2,15 @@
 require_once 'includes/init.php';
 require_once 'config/app_config.php';
 
-// Solo para administradores (o si quieres que sea público, quita esta línea)
-// verificarRol(['admin', 'vendedor', 'tecnico']); // Ajusta según quién debe ver la ayuda
-
 $page_title = "Ayuda y Acerca de";
 $current_page = "ayuda";
 
-// Obtener notas de la versión desde la configuración
-$stmt_notes = $pdo->prepare("SELECT valor FROM configuracion WHERE clave = 'app_release_notes'");
-$stmt_notes->execute();
-$release_notes = $stmt_notes->fetchColumn() ?? 'No hay notas de versión disponibles.';
+// Leer notas de la versión desde un archivo
+$release_notes_file = __DIR__ . '/public/release_notes.md';
+$release_notes = 'No hay notas de versión disponibles.';
+if (file_exists($release_notes_file)) {
+    $release_notes = file_get_contents($release_notes_file);
+}
 
 require_once 'includes/header.php';
 ?>
@@ -29,12 +28,12 @@ require_once 'includes/header.php';
             </div>
             <div class="card-body">
                 <p><strong>Versión Actual:</strong> <span class="badge bg-primary fs-6"><?= htmlspecialchars(APP_VERSION) ?></span></p>
-                <p><strong>Última Actualización:</strong></p>
+                <p><strong>Notas de la Versión:</strong></p>
                 <div class="alert alert-light border">
                     <?php if (!empty($release_notes) && $release_notes != 'No hay notas de versión disponibles.'): ?>
                         <pre style="white-space: pre-wrap; word-wrap: break-word;"><?= htmlspecialchars($release_notes) ?></pre>
                     <?php else: ?>
-                        <p class="text-muted">No hay notas de versión disponibles para esta instalación. Las notas se mostrarán aquí después de la primera actualización.</p>
+                        <p class="text-muted">No hay notas de versión disponibles.</p>
                     <?php endif; ?>
                 </div>
             </div>
@@ -62,8 +61,8 @@ require_once 'includes/header.php';
             </div>
             <div class="card-body">
                 <p>Aquí puedes encontrar el manual completo del sistema, con instrucciones detalladas sobre cómo utilizar cada función.</p>
-                <a href="public/manual.md" class="btn btn-info" target="_blank"><i class="fas fa-book me-2"></i>Descargar Manual (Markdown)</a>
-                <p class="text-muted mt-2"><em>(El manual está en formato Markdown. Puedes abrirlo con cualquier editor de texto o visor de Markdown.)</em></p>
+                <a href="public/manual.pdf" class="btn btn-info" target="_blank"><i class="fas fa-book me-2"></i>Ver Manual (PDF)</a>
+                <p class="text-muted mt-2"><em>(Asegúrate de tener un visor de PDF instalado.)</em></p>
             </div>
         </div>
     </div>

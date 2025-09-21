@@ -20,8 +20,7 @@ try {
         'whatsapp_token' => ['valor' => '', 'descripcion' => 'Token de WhatsApp Business API'],
         'whatsapp_phone' => ['valor' => '', 'descripcion' => 'Número de teléfono de WhatsApp'],
         'iva_porcentaje' => ['valor' => '19', 'descripcion' => 'Porcentaje de IVA'],
-        'moneda' => ['valor' => 'CLP', 'descripcion' => 'Moneda del sistema'],
-        'app_release_notes' => ['valor' => 'Primera instalación.', 'descripcion' => 'Notas de la última versión instalada.']
+        'moneda' => ['valor' => 'CLP', 'descripcion' => 'Moneda del sistema']
     ];
 
     $stmt_existing = $pdo->query("SELECT clave FROM configuracion");
@@ -96,11 +95,28 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 $empresa = $pdo->query("SELECT * FROM empresa WHERE id = 1 LIMIT 1")->fetch(PDO::FETCH_ASSOC);
 $ajustes_raw = $pdo->query("SELECT * FROM configuracion")->fetchAll(PDO::FETCH_ASSOC);
 
+// Definir las claves a excluir
+$excluded_keys = [
+    'cerco_precio_base_metro_lineal',
+    'cerco_adicional_complejidad_media',
+    'cerco_adicional_complejidad_compleja',
+    'cerco_valor_adicional_5_hilos',
+    'cerco_valor_adicional_6_hilos',
+    'cerco_valor_fijo_certificacion_sec',
+    'notas_ultima_version_instalada'
+];
+
+// Filtrar $ajustes_raw inmediatamente
+$ajustes_filtrados = array_filter($ajustes_raw, function($ajuste) use ($excluded_keys) {
+    return !in_array($ajuste['clave'], $excluded_keys);
+});
+
 // Agrupar ajustes para el formulario
 $ajustes_agrupados = [
     'smtp' => [], 'whatsapp' => [], 'financiero' => []
 ];
-foreach ($ajustes_raw as $ajuste) {
+
+foreach ($ajustes_filtrados as $ajuste) {
     if (strpos($ajuste['clave'], 'smtp_') === 0) $ajustes_agrupados['smtp'][] = $ajuste;
     elseif (strpos($ajuste['clave'], 'whatsapp_') === 0) $ajustes_agrupados['whatsapp'][] = $ajuste;
     else $ajustes_agrupados['financiero'][] = $ajuste;
